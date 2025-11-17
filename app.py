@@ -12,8 +12,6 @@ from utils.voice_utils import transcribe_audio_file, transcribe_audio_bytes
 from utils.tts_utils import text_to_speech
 
 
-
-
 # ------------------------
 # PAGE CONFIG
 # ------------------------
@@ -24,9 +22,34 @@ st.set_page_config(
 )
 
 # --------------------------------------------------
-# 🔥 APPLY DARK MODE BEFORE UI RENDERS
+# 🌙 ALWAYS APPLY DARK THEME (no toggle)
 # --------------------------------------------------
-dark_mode_toggle()
+st.markdown("""
+<style>
+.stApp {
+    background-color: #0E1117 !important;
+    color: white !important;
+}
+.block-container {
+    background-color: #0E1117 !important;
+    color: white !important;
+}
+.stTextInput>div>div>input {
+    background-color: #1E222A !important;
+    color: white !important;
+}
+.stFileUploader {
+    background-color: #1E222A !important;
+}
+.stButton>button {
+    background-color: #4A4F57 !important;
+    color: white !important;
+    border: 1px solid #888;
+    border-radius: 8px;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 # ------------------------
 # PAGE TITLE
