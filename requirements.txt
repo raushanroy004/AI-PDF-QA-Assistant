@@ -8,3 +8,4 @@ gtts
 soundfile
 transformers
 torch
+pypdf
