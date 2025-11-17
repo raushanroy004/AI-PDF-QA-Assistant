@@ -3,27 +3,31 @@ import faiss
 import numpy as np
 from groq import Groq
 
-# Load Groq key
+# Load API key
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 client = Groq(api_key=GROQ_API_KEY)
 
-EMBED_MODEL = "nomic-embed-text"
+# Correct Groq embedding model
+EMBED_MODEL = "all-minilm-l12-v2"
+
 
 def get_embedding(text: str):
     """
-    Generate embedding using Groq's embedding API.
+    Generate embeddings using Groq's supported embedding model.
     """
+
     response = client.embeddings.create(
         model=EMBED_MODEL,
         input=text
     )
-    emb = response.data[0].embedding
-    return np.array(emb, dtype="float32")
+
+    embedding = response.data[0].embedding
+    return np.array(embedding, dtype="float32")
 
 
 def create_faiss_index(chunks):
     """
-    Create FAISS vector index.
+    Create FAISS vector index from PDF chunks.
     """
 
     embeddings = [get_embedding(chunk) for chunk in chunks]
