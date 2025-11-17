@@ -12,6 +12,7 @@ from utils.voice_utils import transcribe_audio_file, transcribe_audio_bytes
 from utils.tts_utils import text_to_speech
 from utils.ui_components import dark_mode_toggle
 
+
 # ------------------------
 # PAGE CONFIG
 # ------------------------
@@ -21,8 +22,16 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.title("📘 AI PDF Q&A Assistant (RAG)")
+# --------------------------------------------------
+# 🔥 APPLY DARK MODE BEFORE UI RENDERS
+# --------------------------------------------------
 dark_mode_toggle()
+
+# ------------------------
+# PAGE TITLE
+# ------------------------
+st.title("📘 AI PDF Q&A Assistant (RAG)")
+
 
 # =========================================================
 # PDF UPLOAD
@@ -50,6 +59,7 @@ if uploaded_pdf:
 
     st.success("✅ PDF processed & ready. Ask anything!")
 
+
 # =========================================================
 # TEXT QUESTION INPUT
 # =========================================================
@@ -72,12 +82,12 @@ if st.button("Ask 🚀"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        # 🔊 Voice Output
         audio_path = text_to_speech(short)
         st.audio(audio_path, format="audio/mp3")
 
         with st.expander("📘 View More (Detailed Explanation)"):
             st.write(long)
+
 
 # =========================================================
 # VOICE UPLOAD
@@ -110,6 +120,7 @@ if st.button("Ask (Voice Upload) 🔉"):
 
         with st.expander("📘 View More"):
             st.write(long)
+
 
 # =========================================================
 # LIVE MICROPHONE INPUT

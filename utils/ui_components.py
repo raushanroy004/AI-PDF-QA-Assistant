@@ -36,7 +36,6 @@ def voice_input_uploader():
 def display_retrieved_chunks(chunks):
     """
     Show the PDF chunks used by the model to answer.
-    Good for transparency.
     """
     if not chunks:
         return
@@ -85,10 +84,65 @@ def download_button(text, filename, label):
 
 
 # ------------------------------------------------------
-# DARK MODE TOGGLE
+# DARK MODE TOGGLE (FULL WORKING VERSION)
 # ------------------------------------------------------
 def dark_mode_toggle():
     """
-    Simple UI toggle to enable a dark theme.
+    Fully functional dark mode toggle using custom CSS.
     """
-    return st.checkbox("🌙 Dark Mode")
+
+    dark = st.checkbox("🌙 Dark Mode")
+
+    if dark:
+        # Apply Dark UI theme
+        st.markdown(
+            """
+            <style>
+            .stApp {
+                background-color: #0E1117 !important;
+                color: white !important;
+            }
+            .block-container {
+                background-color: #0E1117 !important;
+                color: white !important;
+            }
+            .stTextInput>div>div>input {
+                background-color: #1E222A !important;
+                color: white !important;
+            }
+            .stFileUploader {
+                background-color: #1E222A !important;
+            }
+            .stButton>button {
+                background-color: #4A4F57 !important;
+                color: white !important;
+                border: 1px solid #888;
+            }
+            .stDownloadButton>button {
+                background-color: #4A4F57 !important;
+                color: white !important;
+                border: 1px solid #888;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+    else:
+        # Reset to Light theme
+        st.markdown(
+            """
+            <style>
+            .stApp {
+                background-color: white !important;
+                color: black !important;
+            }
+            .block-container {
+                background-color: white !important;
+                color: black !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+    return dark
