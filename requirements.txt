@@ -9,3 +9,4 @@ soundfile
 transformers
 torch
 pypdf
+sentence-transformers
