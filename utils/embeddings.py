@@ -1,50 +1,45 @@
 import os
-import numpy as np
 import faiss
-from huggingface_hub import InferenceClient
-from dotenv import load_dotenv
+import numpy as np
+from groq import Groq
 
-load_dotenv()
+# Load API key
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-HF_API_KEY = os.getenv("HF_API_KEY")
-
-# Initialize HF embedding client
-client = InferenceClient(api_key=HF_API_KEY)
+# Initialize client
+client = Groq(api_key=GROQ_API_KEY)
 
 
-def get_embedding(text):
+# -------------------------------------------------------
+# 1️⃣ Create embedding vector
+# -------------------------------------------------------
+def get_embedding(text: str):
     """
-    Generate embeddings from HF Inference API
-    using sentence-transformers/all-MiniLM-L6-v2
+    Returns a float32 embedding vector using Groq embedding model.
     """
 
-    response = client.post(
-        "/pipeline/feature-extraction",
-        json={
-            "model": "sentence-transformers/all-MiniLM-L6-v2",
-            "inputs": text
-        },
+    response = client.embeddings.create(
+        model="nomic-embed-text",   # Groq's embedding model
+        input=text
     )
 
-    # Convert to numpy float32
-    emb = np.array(response, dtype="float32")
-
-    # Some models return list[list[]], flatten if needed
-    if emb.ndim == 2:
-        emb = emb[0]
-
-    return emb
+    embedding = response.data[0].embedding
+    return np.array(embedding, dtype="float32")
 
 
+# -------------------------------------------------------
+# 2️⃣ Create FAISS index from chunks
+# -------------------------------------------------------
 def create_faiss_index(chunks):
     """
-    Create FAISS index for chunk embeddings.
+    Builds FAISS index from PDF text chunks.
     """
 
     embeddings = [get_embedding(chunk) for chunk in chunks]
 
-    dim = len(embeddings[0])
+    dim = len(embeddings[0])  # embedding vector size
     index = faiss.IndexFlatL2(dim)
+
     index.add(np.array(embeddings))
 
     return index
