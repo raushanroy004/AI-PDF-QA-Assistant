@@ -1,35 +1,28 @@
-import io
-from huggingface_hub import InferenceClient
-import os
+import streamlit as st
+from groq import Groq
 
-# Load HF API Key safely
-HF_API_KEY = os.getenv("HF_API_KEY")
+# Load secrets (Streamlit Cloud)
+HF_API_KEY = st.secrets["HF_API_KEY"]
 
-# Init client
-client = InferenceClient(api_key=HF_API_KEY)
-
+# Initialize Groq client
+client = Groq(api_key=HF_API_KEY)
 
 def text_to_speech(text: str):
     """
-    Convert text → speech (MP3 bytes).
-    Works on Streamlit Cloud with no ffmpeg.
+    Convert text → speech (mp3 bytes) using Groq TTS.
+    Returns raw audio bytes (best for Streamlit).
     """
 
-    if not text or not text.strip():
-        return None
-
     try:
-        # HuggingFace TTS model
-        model = "espnet/kan-bayashi_ljspeech_vits"
-
-        # Generate speech
-        response = client.text_to_speech(
-            model=model,
-            text=text
+        response = client.audio.speech.create(
+            model="g2p-ko-v2",   # Groq’s English-capable TTS model
+            voice="alloy",
+            input=text
         )
 
-        # Convert response stream → mp3 bytes
-        audio_bytes = io.BytesIO(response.read()).getvalue()
+        # Raw audio bytes
+        audio_bytes = response.read()
+
         return audio_bytes
 
     except Exception as e:
