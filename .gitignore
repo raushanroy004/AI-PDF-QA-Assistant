@@ -1,0 +1,21 @@
+# Ignore virtual environment
+venv/
+
+# Ignore environment variables
+.env
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore audio temp files
+live_audio_temp.wav
+*.wav
+*.mp3
+
+# Ignore Streamlit cache
+.streamlit/
+
+# Ignore random system files
+.DS_Store
+Thumbs.db

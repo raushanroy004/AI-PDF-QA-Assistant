@@ -1,0 +1,9 @@
+streamlit
+sentence-transformers
+faiss-cpu
+groq
+pypdf
+python-dotenv
+gtts
+speechrecognition
+pyaudio
