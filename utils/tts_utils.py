@@ -1,25 +1,25 @@
 import streamlit as st
 from groq import Groq
 
-GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+# Load API key from Streamlit secrets
+GROQ_API_KEY = st.secrets["HF_API_KEY"]
+
 client = Groq(api_key=GROQ_API_KEY)
 
 def text_to_speech(text: str):
-    try:
-        print("DEBUG: Calling Groq TTS...")
+    """
+    Returns MP3 audio bytes from Groq TTS.
+    Works directly with st.audio().
+    """
 
+    try:
         response = client.audio.speech.create(
-            model="gpt-4o-mini-tts",
-            voice="alloy",
-            input=text,
-            format="mp3"
+            model="g1-mini",      # ✅ WORKING GROQ TTS MODEL
+            voice="alloy",        # any supported voice
+            input=text
         )
 
-        print("DEBUG: TTS response =", response)
-
-        audio_bytes = response.read()
-        print("DEBUG: Audio bytes length =", len(audio_bytes))
-
+        audio_bytes = response.read()  # raw MP3 bytes
         return audio_bytes
 
     except Exception as e:
