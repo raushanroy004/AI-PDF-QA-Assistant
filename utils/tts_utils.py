@@ -1,6 +1,5 @@
-# utils/tts_utils.py
-
 import os
+import base64
 import tempfile
 from groq import Groq
 
@@ -9,25 +8,29 @@ client = Groq(api_key=GROQ_API_KEY)
 
 def text_to_speech(text):
     """
-    Convert text into mp3 speech using Groq TTS
-    Returns path to mp3 file.
+    Convert text to MP3 using Groq TTS (correct base64 decoding)
+    Returns path to saved mp3 file.
     """
 
     if not text or text.strip() == "":
         return None
 
     try:
-        # Call Groq TTS API
+        # Request TTS audio
         response = client.audio.speech.create(
             model="gpt-4o-mini-tts",
             voice="alloy",
             input=text
         )
 
-        # Save audio to temp mp3 file
+        # 🔥 Groq returns base64-encoded audio → decode it properly
+        audio_b64 = response.data
+        audio_bytes = base64.b64decode(audio_b64)
+
+        # Save as .mp3 file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
             mp3_path = tmp.name
-            tmp.write(response.audio)
+            tmp.write(audio_bytes)
 
         return mp3_path
 
