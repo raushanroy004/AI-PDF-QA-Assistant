@@ -2,27 +2,26 @@ import streamlit as st
 from groq import Groq
 
 # Load secrets (Streamlit Cloud)
-HF_API_KEY = st.secrets["HF_API_KEY"]
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
 
 # Initialize Groq client
-client = Groq(api_key=HF_API_KEY)
+client = Groq(api_key=GROQ_API_KEY)
+
 
 def text_to_speech(text: str):
     """
-    Convert text → speech (mp3 bytes) using Groq TTS.
-    Returns raw audio bytes (best for Streamlit).
+    Convert text → speech using Groq Whisper-TTS.
+    Returns raw audio bytes for Streamlit st.audio().
     """
 
     try:
         response = client.audio.speech.create(
-            model="g2p-ko-v2",   # Groq’s English-capable TTS model
-            voice="alloy",
-            input=text
+            model="whisper-tts",        # ✅ Correct Groq TTS model
+            input=text,                # text to convert
+            format="mp3"               # return mp3 bytes
         )
 
-        # Raw audio bytes
-        audio_bytes = response.read()
-
+        audio_bytes = response.read()  # raw audio bytes
         return audio_bytes
 
     except Exception as e:
