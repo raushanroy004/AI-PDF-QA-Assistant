@@ -1,37 +1,43 @@
 import os
 import tempfile
-from transformers import pipeline
+from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
 
-HF_API_KEY = os.getenv("HF_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# Load Whisper Turbo (ffmpeg-free)
-asr = pipeline(
-    "automatic-speech-recognition",
-    model="openai/whisper-large-v3-turbo",
-    token=HF_API_KEY
-)
+client = Groq(api_key=GROQ_API_KEY)
 
-# --------------------------
+# ---------------------------
 # Transcribe uploaded audio
-# --------------------------
+# ---------------------------
 def transcribe_audio_file(file):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         temp_path = tmp.name
         tmp.write(file.read())
 
-    result = asr(temp_path)
-    return result["text"]
+    with open(temp_path, "rb") as audio_file:
+        response = client.audio.transcriptions.create(
+            file=audio_file,
+            model="whisper-large-v3"
+        )
 
-# --------------------------
-# Transcribe live audio bytes
-# --------------------------
+    return response.text
+
+
+# ---------------------------
+# Transcribe LIVE audio bytes
+# ---------------------------
 def transcribe_audio_bytes(audio_bytes):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         temp_path = tmp.name
         tmp.write(audio_bytes)
 
-    result = asr(temp_path)
-    return result["text"]
+    with open(temp_path, "rb") as audio_file:
+        response = client.audio.transcriptions.create(
+            file=audio_file,
+            model="whisper-large-v3"
+        )
+
+    return response.text

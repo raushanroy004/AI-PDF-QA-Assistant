@@ -5,8 +5,4 @@ python-dotenv
 huggingface_hub
 groq
 gtts
-soundfile
-transformers
-torch
 pypdf
-sentence-transformers
