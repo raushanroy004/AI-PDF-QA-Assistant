@@ -1,9 +1,10 @@
 streamlit
-sentence-transformers
-faiss-cpu
 groq
-pypdf
+faiss-cpu
 python-dotenv
+pypdf
+numpy
 gtts
-speechrecognition
-pyaudio
+soundfile
+huggingface-hub
+requests
