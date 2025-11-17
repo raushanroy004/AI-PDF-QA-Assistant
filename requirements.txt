@@ -2,7 +2,6 @@ streamlit
 faiss-cpu
 numpy
 python-dotenv
-huggingface_hub
 groq
 gtts
 pypdf

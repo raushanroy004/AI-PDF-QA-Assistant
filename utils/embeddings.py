@@ -1,34 +1,35 @@
-import numpy as np
+import os
 import faiss
-from sentence_transformers import SentenceTransformer
+import numpy as np
+from groq import Groq
 
-# Load model ONCE (Streamlit Cloud supports this)
-embed_model = SentenceTransformer("all-MiniLM-L6-v2")
+# Load Groq key
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+client = Groq(api_key=GROQ_API_KEY)
 
+EMBED_MODEL = "nomic-embed-text"
 
-# -------------------------------------------------------
-# 1️⃣ Get embedding
-# -------------------------------------------------------
 def get_embedding(text: str):
     """
-    Generate embeddings using local SentenceTransformer model.
-    Works on Streamlit Cloud reliably.
+    Generate embedding using Groq's embedding API.
     """
-    emb = embed_model.encode(text, convert_to_numpy=True)
-    return emb.astype("float32")
+    response = client.embeddings.create(
+        model=EMBED_MODEL,
+        input=text
+    )
+    emb = response.data[0].embedding
+    return np.array(emb, dtype="float32")
 
 
-# -------------------------------------------------------
-# 2️⃣ Create FAISS index
-# -------------------------------------------------------
 def create_faiss_index(chunks):
     """
-    Creates a FAISS index for PDF chunks.
+    Create FAISS vector index.
     """
+
     embeddings = [get_embedding(chunk) for chunk in chunks]
 
-    dim = embeddings[0].shape[0]
+    dim = len(embeddings[0])
     index = faiss.IndexFlatL2(dim)
-
     index.add(np.array(embeddings))
+
     return index
