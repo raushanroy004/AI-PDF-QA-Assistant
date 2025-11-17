@@ -1,10 +1,10 @@
 streamlit
-groq
 faiss-cpu
-python-dotenv
-pypdf
 numpy
+python-dotenv
+huggingface_hub
+groq
 gtts
 soundfile
-huggingface-hub
-requests
+transformers
+torch

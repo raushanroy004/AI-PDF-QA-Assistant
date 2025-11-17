@@ -1,36 +1,36 @@
 import os
-import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
-from huggingface_hub import login
+import faiss
+from dotenv import load_dotenv
+from huggingface_hub import InferenceClient
 
-# --------------------------------------------
-#  Authenticate using Streamlit Secrets or .env
-# --------------------------------------------
+load_dotenv()
+
+# Load HF key
 HF_API_KEY = os.getenv("HF_API_KEY")
 
-if HF_API_KEY:
-    login(HF_API_KEY)
-else:
-    print("⚠️ HF_API_KEY missing! Please add it in Streamlit Secrets.")
+# Create HF embedding client
+client = InferenceClient(api_key=HF_API_KEY)
 
-# Sentence Transformer model
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-model = SentenceTransformer(MODEL_NAME)
+def get_embedding(text: str):
+    """
+    Generate embedding using HuggingFace Inference API.
+    """
+    response = client.feature_extraction(
+        model="sentence-transformers/all-MiniLM-L6-v2",
+        inputs=text
+    )
+    return np.array(response, dtype="float32")
 
-# Create single text embedding
-def get_embedding(text):
-    embedding = model.encode(text, convert_to_numpy=True)
-    return embedding.astype('float32')
 
-# Create FAISS index from chunks
 def create_faiss_index(chunks):
+    """
+    Create FAISS vector index from text chunks.
+    """
     embeddings = [get_embedding(chunk) for chunk in chunks]
     dim = embeddings[0].shape[0]
+
     index = faiss.IndexFlatL2(dim)
     index.add(np.array(embeddings))
-    return index
 
-# Recompute embeddings for search
-def load_faiss_index(chunks, index):
-    return [get_embedding(chunk) for chunk in chunks]
+    return index
