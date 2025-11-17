@@ -1,57 +1,72 @@
 import os
+import tempfile
+from transformers import pipeline
+import soundfile as sf
+import numpy as np
 from dotenv import load_dotenv
-from groq import Groq
 
 load_dotenv()
 
-# Initialize Groq client
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+HF_API_KEY = os.getenv("HF_API_KEY")
+
+
+# -----------------------------
+# Load Whisper model (HuggingFace)
+# -----------------------------
+asr = pipeline(
+    "automatic-speech-recognition",
+    model="openai/whisper-large-v3",
+    token=HF_API_KEY
+)
 
 
 # -------------------------------------------------------
-# 1️⃣ Function: Transcribe uploaded voice file (wav/mp3)
+# 1️⃣ Transcribe uploaded audio (wav/mp3)
 # -------------------------------------------------------
 def transcribe_audio_file(file):
     """
-    Transcribes uploaded audio file (wav/mp3)
-    using Whisper (Groq).
+    Transcribes uploaded WAV/MP3 file using Whisper (HF pipeline).
     """
-    # Save temp file
-    temp_path = "uploaded_audio_temp.wav"
-    with open(temp_path, "wb") as f:
-        f.write(file.read())
+    # Save temp audio
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+        temp_path = tmp.name
+        tmp.write(file.read())
 
-    # Whisper STT
-    with open(temp_path, "rb") as f:
-        response = client.audio.transcriptions.create(
-            file=f,
-            model="whisper-large-v3"
-        )
-
-    return response.text
-
+    # Transcribe
+    result = asr(temp_path)
+    return result["text"]
 
 
 # -------------------------------------------------------
-# 2️⃣ Function: Transcribe LIVE microphone audio (raw bytes)
+# 2️⃣ Transcribe LIVE microphone audio (raw bytes)
 # -------------------------------------------------------
 def transcribe_audio_bytes(audio_bytes):
     """
-    Takes raw audio bytes recorded from streamlit-webrtc
-    and transcribes it using Whisper (Groq).
+    Transcribes raw audio bytes recorded in Streamlit.
+    Converts bytes → wav → transcribe.
     """
 
-    temp_path = "live_audio_temp.wav"
-
-    # Save it
-    with open(temp_path, "wb") as f:
-        f.write(audio_bytes)
-
-    # Whisper STT
-    with open(temp_path, "rb") as f:
-        response = client.audio.transcriptions.create(
-            file=f,
-            model="whisper-large-v3"
+    # Convert bytes → numpy → WAV file
+    try:
+        # Try to read audio directly
+        audio_np, sr = sf.read(
+            tempfile.NamedTemporaryFile(delete=False, suffix=".wav").name,
+            dtype="float32"
         )
+    except:
+        # If raw bytes, convert to WAV
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+            temp_path = tmp.name
+            tmp.write(audio_bytes)
 
-    return response.text
+        # Read the saved audio
+        audio_np, sr = sf.read(temp_path, dtype="float32")
+
+    # Save cleaned WAV
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as cleaned:
+        cleaned_path = cleaned.name
+        sf.write(cleaned_path, audio_np, sr)
+
+    # Transcribe
+    result = asr(cleaned_path)
+    return result["text"]

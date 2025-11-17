@@ -1,64 +1,74 @@
 import os
-from dotenv import load_dotenv
-from groq import Groq
 import numpy as np
 import faiss
+from groq import Groq
+from dotenv import load_dotenv
 
+# Load .env variables
 load_dotenv()
-
-# Load Groq client
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # Import embedding function
 from utils.embeddings import get_embedding
 
+# Load Groq API Key
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+if not GROQ_API_KEY:
+    raise ValueError("❌ GROQ_API_KEY missing! Add it to .env or Streamlit secrets.")
+
+client = Groq(api_key=GROQ_API_KEY)
+
 
 def answer_question_with_rag(question, faiss_index, chunks):
     """
-    Returns:
-        short_summary (str)
-        long_summary (str)
+    Returns extracted short and long summaries using:
+    - FAISS vector search
+    - Groq LLM
     """
 
-    # Convert question into vector
+    # Convert question to embedding
     question_emb = np.array([get_embedding(question)], dtype="float32")
 
-    # Search FAISS index
+    # Perform FAISS similarity search
     D, I = faiss_index.search(question_emb, 3)
 
-    # Retrieve relevant chunks
-    retrieved_chunks = [chunks[i] for i in I[0] if i < len(chunks)]
-    context = "\n\n".join(retrieved_chunks)
+    # Retrieve relevant chunks safely
+    retrieved_chunks = [
+        chunks[i] for i in I[0]
+        if isinstance(i, (int, np.integer)) and i < len(chunks)
+    ]
 
-    # Groq LLM: Clean short + long format
+    context = "\n\n".join(retrieved_chunks) if retrieved_chunks else "No relevant text found."
+
+    # Call Groq LLM
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "system",
                 "content": (
-                    "You summarize PDF content clearly. "
-                    "Avoid tags like <SHORT>. Keep writing clean."
+                    "You are an expert PDF summarizer. "
+                    "Always respond clearly and professionally."
                 )
             },
             {
                 "role": "user",
                 "content": f"""
-Use ONLY the following PDF content to answer.
+Use ONLY the following PDF content to answer:
 
-CONTEXT:
+=== PDF CONTEXT ===
 {context}
 
-QUESTION:
+=== QUESTION ===
 {question}
 
-Return your response ONLY in this clean format:
+Respond in EXACTLY this clean format:
 
 SHORT_SUMMARY:
-(Write a short 2–3 line crisp summary.)
+(Provide a crisp 2–3 sentence summary)
 
 LONG_SUMMARY:
-(Write a detailed, well-structured explanation.)
+(Provide a full, structured detailed explanation)
 """
             }
         ]
@@ -66,13 +76,26 @@ LONG_SUMMARY:
 
     full_text = response.choices[0].message.content.strip()
 
-    # Extract short + long summaries
-    try:
-        short_sum = full_text.split("SHORT_SUMMARY:")[1].split("LONG_SUMMARY:")[0].strip()
-        long_sum = full_text.split("LONG_SUMMARY:")[1].strip()
-    except:
-        # fallback — in case model didn’t follow format
-        short_sum = full_text[:200] + "..."
-        long_sum = full_text
+    # --------------------------------------------
+    # SAFE PARSING
+    # --------------------------------------------
+    short_sum = "Summary unavailable."
+    long_sum = full_text  # fallback
+
+    if "SHORT_SUMMARY:" in full_text:
+        try:
+            short_sum = (
+                full_text.split("SHORT_SUMMARY:")[1]
+                .split("LONG_SUMMARY:")[0]
+                .strip()
+            )
+        except:
+            pass
+
+    if "LONG_SUMMARY:" in full_text:
+        try:
+            long_sum = full_text.split("LONG_SUMMARY:")[1].strip()
+        except:
+            pass
 
     return short_sum, long_sum

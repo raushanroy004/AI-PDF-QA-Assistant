@@ -28,6 +28,8 @@ dark_mode_toggle()
 # PDF UPLOAD
 # =========================================================
 
+st.header("📄 Upload Your PDF")
+
 uploaded_pdf = st.file_uploader("Upload PDF file", type=["pdf"])
 
 if uploaded_pdf:
@@ -41,20 +43,20 @@ if uploaded_pdf:
 
     st.session_state.chunks = chunks
 
-    with st.spinner("Creating embeddings..."):
+    with st.spinner("Creating embeddings... (1st time may take ~30 sec)"):
         faiss_index = create_faiss_index(chunks)
 
     st.session_state.faiss_index = faiss_index
 
-    st.success("PDF processed and ready!")
+    st.success("✅ PDF processed & ready. Ask anything!")
 
 # =========================================================
 # TEXT QUESTION INPUT
 # =========================================================
 
-st.header("💬 Chat from PDF")
+st.header("💬 Ask a Question from the PDF (Text)")
 
-user_question = st.text_input("Ask a question from the PDF:")
+user_question = st.text_input("Type your question here:")
 
 if st.button("Ask 🚀"):
     if "faiss_index" not in st.session_state:
@@ -70,18 +72,18 @@ if st.button("Ask 🚀"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        # 🔊 AI SPEAKS ANSWER
+        # 🔊 Voice Output
         audio_path = text_to_speech(short)
         st.audio(audio_path, format="audio/mp3")
 
-        with st.expander("🔽 View More (Detailed Explanation)"):
+        with st.expander("📘 View More (Detailed Explanation)"):
             st.write(long)
 
 # =========================================================
 # VOICE UPLOAD
 # =========================================================
 
-st.header("🎤 Ask using voice (Upload)")
+st.header("🎤 Ask using Voice (Upload File)")
 
 voice_file = st.file_uploader("Upload voice question (wav/mp3)", type=["wav", "mp3"])
 
@@ -89,7 +91,7 @@ if st.button("Ask (Voice Upload) 🔉"):
     if not voice_file:
         st.error("Please upload a voice file first.")
     else:
-        with st.spinner("Transcribing..."):
+        with st.spinner("Transcribing your question..."):
             question_text = transcribe_audio_file(voice_file)
 
         st.write(f"**You asked:** {question_text}")
@@ -104,33 +106,29 @@ if st.button("Ask (Voice Upload) 🔉"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        # 🔊 AI SPEAKS ANSWER
         st.audio(text_to_speech(short), format="audio/mp3")
 
-        with st.expander("🔽 View More"):
+        with st.expander("📘 View More"):
             st.write(long)
 
 # =========================================================
-# LIVE MICROPHONE (BEST OPTION)
+# LIVE MICROPHONE INPUT
 # =========================================================
 
 st.header("🎙 Ask using Live Microphone (RECOMMENDED)")
 st.info("Click the mic below → record → then press Ask (Live)")
 
-# Streamlit built-in audio recorder
 audio = st.audio_input("🎤 Record your question here")
 
 if st.button("Ask (Live) 🎤🤖"):
     if audio is None:
         st.error("Please record your voice first!")
     else:
-        # Convert recorded audio to text
-        with st.spinner("Transcribing..."):
+        with st.spinner("Transcribing speech..."):
             question_live = transcribe_audio_bytes(audio.getvalue())
 
         st.write(f"**You said:** {question_live}")
 
-        # Answer from RAG model
         with st.spinner("Thinking..."):
             short, long = answer_question_with_rag(
                 question_live,
@@ -141,8 +139,7 @@ if st.button("Ask (Live) 🎤🤖"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        # 🔊 AI SPEAKS THE ANSWER
         st.audio(text_to_speech(short), format="audio/mp3")
 
-        with st.expander("🔽 View More"):
+        with st.expander("📘 View More"):
             st.write(long)
