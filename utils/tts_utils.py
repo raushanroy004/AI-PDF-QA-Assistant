@@ -1,48 +1,52 @@
 from gtts import gTTS
-import tempfile
-import os
+import io
 import re
 
-def clean_for_tts(text):
+
+def clean_for_tts(text: str) -> str:
     """
-    Removes characters that cause gTTS to create empty audio files.
+    Clean text so gTTS doesn't create broken/empty audio.
+    - remove emojis / non-ASCII
+    - collapse whitespace
     """
     if not text:
         return ""
 
-    # remove emojis and non-ASCII chars
-    text = re.sub(r'[^\x00-\x7F]+', ' ', text)
+    # remove non-ASCII chars (emojis etc.)
+    text = re.sub(r"[^\x00-\x7F]+", " ", text)
 
-    # remove repeated spaces
-    text = re.sub(r'\s+', ' ', text).strip()
+    # collapse multiple spaces/newlines
+    text = re.sub(r"\s+", " ", text).strip()
 
     return text
 
 
-def text_to_speech(text):
+def text_to_speech(text: str):
     """
-    Convert text to speech using gTTS (100% works on Streamlit Cloud).
-    Returns path to an mp3 file.
-    """
+    Convert text to speech using gTTS and return audio bytes (BytesIO).
 
+    Returns:
+        BytesIO object containing mp3 audio, or None on failure.
+    """
     text = clean_for_tts(text)
 
-    if text.strip() == "":
+    if not text:
         return None
 
     try:
-        tts = gTTS(text=text, lang='en')
+        # Create in-memory bytes buffer
+        mp3_bytes = io.BytesIO()
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-            tmp_path = tmp.name
-            tts.save(tmp_path)
+        # Generate TTS directly into the buffer
+        tts = gTTS(text=text, lang="en")
+        tts.write_to_fp(mp3_bytes)
 
-        # Double-check file size (must not be zero)
-        if os.path.getsize(tmp_path) < 2000:
-            return None
-        
-        return tmp_path
+        # Rewind buffer to the beginning
+        mp3_bytes.seek(0)
+
+        return mp3_bytes
 
     except Exception as e:
+        # Will show up in Streamlit "Manage App → Logs"
         print("TTS ERROR:", e)
         return None

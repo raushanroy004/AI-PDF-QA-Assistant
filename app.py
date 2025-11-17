@@ -21,9 +21,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --------------------------------------------------
+# ------------------------
 # 🌙 ALWAYS APPLY DARK THEME (no toggle)
-# --------------------------------------------------
+# ------------------------
 st.markdown("""
 <style>
 .stApp {
@@ -106,8 +106,10 @@ if st.button("Ask 🚀"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        audio_path = text_to_speech(short)
-        st.audio(audio_path, format="audio/mp3")
+        # --- FIXED AUDIO (bytes-based) ---
+        audio_bytes = text_to_speech(short)
+        if audio_bytes:
+            st.audio(audio_bytes, format="audio/mp3")
 
         with st.expander("📘 View More (Detailed Explanation)"):
             st.write(long)
@@ -140,7 +142,10 @@ if st.button("Ask (Voice Upload) 🔉"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        st.audio(text_to_speech(short), format="audio/mp3")
+        # --- FIXED AUDIO (bytes-based) ---
+        audio_bytes = text_to_speech(short)
+        if audio_bytes:
+            st.audio(audio_bytes, format="audio/mp3")
 
         with st.expander("📘 View More"):
             st.write(long)
@@ -174,7 +179,10 @@ if st.button("Ask (Live) 🎤🤖"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        st.audio(text_to_speech(short), format="audio/mp3")
+        # --- FIXED AUDIO (bytes-based) ---
+        audio_bytes = text_to_speech(short)
+        if audio_bytes:
+            st.audio(audio_bytes, format="audio/mp3")
 
         with st.expander("📘 View More"):
             st.write(long)
