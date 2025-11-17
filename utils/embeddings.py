@@ -9,6 +9,9 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 # Initialize client
 client = Groq(api_key=GROQ_API_KEY)
 
+# Groq supported embedding model
+EMBED_MODEL = "text-embedding-3-small"   # ✅ WORKS ON STREAMLIT CLOUD
+
 
 # -------------------------------------------------------
 # 1️⃣ Create embedding vector
@@ -19,7 +22,7 @@ def get_embedding(text: str):
     """
 
     response = client.embeddings.create(
-        model="nomic-embed-text",   # Groq's embedding model
+        model=EMBED_MODEL,
         input=text
     )
 
@@ -37,7 +40,7 @@ def create_faiss_index(chunks):
 
     embeddings = [get_embedding(chunk) for chunk in chunks]
 
-    dim = len(embeddings[0])  # embedding vector size
+    dim = len(embeddings[0])  # embedding size
     index = faiss.IndexFlatL2(dim)
 
     index.add(np.array(embeddings))
