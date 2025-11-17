@@ -24,7 +24,8 @@ st.set_page_config(
 # ------------------------
 # 🌙 ALWAYS APPLY DARK THEME (no toggle)
 # ------------------------
-st.markdown("""
+st.markdown(
+    """
 <style>
 .stApp {
     background-color: #0E1117 !important;
@@ -48,7 +49,39 @@ st.markdown("""
     border-radius: 8px;
 }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
+
+# ------------------------
+# SMALL HELPER: play TTS safely
+# ------------------------
+def play_tts_from_text(text: str):
+    """
+    Calls text_to_speech(text) and plays the result.
+
+    Works for BOTH:
+    - bytes / bytearray
+    - file path (str) -> .wav / .mp3
+    """
+    audio_result = text_to_speech(text)
+    if not audio_result:
+        return
+
+    # Case 1: bytes returned
+    if isinstance(audio_result, (bytes, bytearray)):
+        st.audio(audio_result)
+
+    # Case 2: file path returned
+    elif isinstance(audio_result, str):
+        ext = os.path.splitext(audio_result)[1].lower()
+        mime = "audio/wav" if ext == ".wav" else "audio/mp3"
+        try:
+            with open(audio_result, "rb") as f:
+                st.audio(f.read(), format=mime)
+        except Exception:
+            # Fallback: try to play the string directly (Streamlit also accepts path)
+            st.audio(audio_result, format=mime)
 
 
 # ------------------------
@@ -106,10 +139,8 @@ if st.button("Ask 🚀"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        # --- FIXED AUDIO (bytes-based) ---
-        audio_bytes = text_to_speech(short)
-        if audio_bytes:
-            st.audio(audio_bytes, format="audio/mp3")
+        # ✅ Play TTS audio
+        play_tts_from_text(short)
 
         with st.expander("📘 View More (Detailed Explanation)"):
             st.write(long)
@@ -121,11 +152,15 @@ if st.button("Ask 🚀"):
 
 st.header("🎤 Ask using Voice (Upload File)")
 
-voice_file = st.file_uploader("Upload voice question (wav/mp3)", type=["wav", "mp3"])
+voice_file = st.file_uploader(
+    "Upload voice question (wav/mp3)", type=["wav", "mp3"]
+)
 
 if st.button("Ask (Voice Upload) 🔉"):
     if not voice_file:
         st.error("Please upload a voice file first.")
+    elif "faiss_index" not in st.session_state:
+        st.error("Please upload a PDF first!")
     else:
         with st.spinner("Transcribing your question..."):
             question_text = transcribe_audio_file(voice_file)
@@ -142,10 +177,8 @@ if st.button("Ask (Voice Upload) 🔉"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        # --- FIXED AUDIO (bytes-based) ---
-        audio_bytes = text_to_speech(short)
-        if audio_bytes:
-            st.audio(audio_bytes, format="audio/mp3")
+        # ✅ Play TTS audio
+        play_tts_from_text(short)
 
         with st.expander("📘 View More"):
             st.write(long)
@@ -163,6 +196,8 @@ audio = st.audio_input("🎤 Record your question here")
 if st.button("Ask (Live) 🎤🤖"):
     if audio is None:
         st.error("Please record your voice first!")
+    elif "faiss_index" not in st.session_state:
+        st.error("Please upload a PDF first!")
     else:
         with st.spinner("Transcribing speech..."):
             question_live = transcribe_audio_bytes(audio.getvalue())
@@ -179,10 +214,8 @@ if st.button("Ask (Live) 🎤🤖"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        # --- FIXED AUDIO (bytes-based) ---
-        audio_bytes = text_to_speech(short)
-        if audio_bytes:
-            st.audio(audio_bytes, format="audio/mp3")
+        # ✅ Play TTS audio
+        play_tts_from_text(short)
 
         with st.expander("📘 View More"):
             st.write(long)

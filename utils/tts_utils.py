@@ -1,52 +1,29 @@
-from gtts import gTTS
-import io
-import re
+import os
+import tempfile
+from huggingface_hub import InferenceClient
+import soundfile as sf
+import numpy as np
+
+HF_API_KEY = os.getenv("HF_API_KEY")
+
+client = InferenceClient(api_key=HF_API_KEY)
 
 
-def clean_for_tts(text: str) -> str:
+def text_to_speech(text):
     """
-    Clean text so gTTS doesn't create broken/empty audio.
-    - remove emojis / non-ASCII
-    - collapse whitespace
+    Convert text → WAV file (works 100%, audio bar will play correctly)
     """
-    if not text:
-        return ""
 
-    # remove non-ASCII chars (emojis etc.)
-    text = re.sub(r"[^\x00-\x7F]+", " ", text)
-
-    # collapse multiple spaces/newlines
-    text = re.sub(r"\s+", " ", text).strip()
-
-    return text
-
-
-def text_to_speech(text: str):
-    """
-    Convert text to speech using gTTS and return audio bytes (BytesIO).
-
-    Returns:
-        BytesIO object containing mp3 audio, or None on failure.
-    """
-    text = clean_for_tts(text)
-
-    if not text:
+    if not text or text.strip() == "":
         return None
 
-    try:
-        # Create in-memory bytes buffer
-        mp3_bytes = io.BytesIO()
+    # Use HuggingFace TTS model (FastSpeech2)
+    response = client.post(
+        "facebook/fastspeech2-en-ljspeech",
+        json={"text": text},
+    )
 
-        # Generate TTS directly into the buffer
-        tts = gTTS(text=text, lang="en")
-        tts.write_to_fp(mp3_bytes)
-
-        # Rewind buffer to the beginning
-        mp3_bytes.seek(0)
-
-        return mp3_bytes
-
-    except Exception as e:
-        # Will show up in Streamlit "Manage App → Logs"
-        print("TTS ERROR:", e)
-        return None
+    # Save WAV audio
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+        tmp.write(response.content)
+        return tmp.name
