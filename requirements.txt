@@ -8,6 +8,7 @@ torch
 huggingface_hub
 groq
 pypdf
-pyttsx3
-pydub
-ffmpeg-python
+gtts
+groq
+
+

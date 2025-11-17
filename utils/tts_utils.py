@@ -1,40 +1,33 @@
 # utils/tts_utils.py
 
-import pyttsx3
-from pydub import AudioSegment
-import tempfile
 import os
+import tempfile
+from groq import Groq
 
-# Initialize engine once
-engine = pyttsx3.init()
-
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+client = Groq(api_key=GROQ_API_KEY)
 
 def text_to_speech(text):
     """
-    Generate real MP3 audio using offline TTS (pyttsx3 + pydub)
-    Returns path to MP3 file
+    Convert text into mp3 speech using Groq TTS
+    Returns path to mp3 file.
     """
+
     if not text or text.strip() == "":
         return None
 
     try:
-        # Temporary WAV file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_wav:
-            wav_path = tmp_wav.name
+        # Call Groq TTS API
+        response = client.audio.speech.create(
+            model="gpt-4o-mini-tts",
+            voice="alloy",
+            input=text
+        )
 
-        # Save speech to WAV
-        engine.save_to_file(text, wav_path)
-        engine.runAndWait()
-
-        # Convert WAV → MP3
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_mp3:
-            mp3_path = tmp_mp3.name
-
-        sound = AudioSegment.from_wav(wav_path)
-        sound.export(mp3_path, format="mp3")
-
-        # Cleanup
-        os.remove(wav_path)
+        # Save audio to temp mp3 file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+            mp3_path = tmp.name
+            tmp.write(response.audio)
 
         return mp3_path
 
