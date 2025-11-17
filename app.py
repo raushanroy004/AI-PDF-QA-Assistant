@@ -10,7 +10,8 @@ from utils.embeddings import create_faiss_index
 from utils.rag_pipeline import answer_question_with_rag
 from utils.voice_utils import transcribe_audio_file, transcribe_audio_bytes
 from utils.tts_utils import text_to_speech
-from utils.ui_components import dark_mode_toggle
+
+
 
 
 # ------------------------
