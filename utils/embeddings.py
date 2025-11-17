@@ -1,48 +1,52 @@
 import os
-import faiss
 import numpy as np
-from groq import Groq
+import faiss
+from huggingface_hub import InferenceClient
 
-# Load API key
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+# Load HF API Key
+HF_API_KEY = os.getenv("HF_API_KEY")
 
-# Initialize client
-client = Groq(api_key=GROQ_API_KEY)
+# Initialize HF Client
+hf_client = InferenceClient(api_key=HF_API_KEY)
 
-# Groq supported embedding model
-EMBED_MODEL = "text-embedding-3-small"   # ✅ WORKS ON STREAMLIT CLOUD
+EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 # -------------------------------------------------------
-# 1️⃣ Create embedding vector
+# 1️⃣ Get Embedding
 # -------------------------------------------------------
 def get_embedding(text: str):
     """
-    Returns a float32 embedding vector using Groq embedding model.
+    Generate embeddings using HuggingFace Inference API.
+    Works on Streamlit Cloud without errors.
     """
-
-    response = client.embeddings.create(
+    response = hf_client.feature_extraction(
         model=EMBED_MODEL,
-        input=text
+        inputs=text
     )
 
-    embedding = response.data[0].embedding
-    return np.array(embedding, dtype="float32")
+    # Convert to numpy
+    vector = np.array(response, dtype="float32")
+
+    # If model returns 2D array -> flatten it
+    if len(vector.shape) > 1:
+        vector = vector[0]
+
+    return vector
 
 
 # -------------------------------------------------------
-# 2️⃣ Create FAISS index from chunks
+# 2️⃣ Create FAISS index
 # -------------------------------------------------------
 def create_faiss_index(chunks):
     """
-    Builds FAISS index from PDF text chunks.
+    Creates a FAISS index for PDF text chunks.
     """
 
     embeddings = [get_embedding(chunk) for chunk in chunks]
+    dim = len(embeddings[0])
 
-    dim = len(embeddings[0])  # embedding size
     index = faiss.IndexFlatL2(dim)
-
     index.add(np.array(embeddings))
 
     return index
