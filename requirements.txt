@@ -1,7 +1,12 @@
-streamlit
+sentence-transformers
 faiss-cpu
 numpy
+streamlit
 python-dotenv
+transformers
+torch
+huggingface_hub
+soundfile
 groq
 gtts
 pypdf
