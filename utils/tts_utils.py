@@ -1,67 +1,35 @@
 from gtts import gTTS
 import tempfile
 import os
+import soundfile as sf
+import numpy as np
 
 
-def text_to_speech(text: str):
+def text_to_speech(text):
     """
-    Convert text to speech (mp3) and return the temporary file path.
-
-    - Uses gTTS (Google Text-to-Speech)
-    - Creates a safe temporary file compatible with Streamlit Cloud
-    - Handles empty text and TTS errors gracefully
+    Convert text into WAV audio (Streamlit-safe).
+    gTTS → MP3 → WAV (always plays correctly)
     """
-
-    if not text or not text.strip():
+    if not text or text.strip() == "":
         return None
 
     try:
-        # Generate speech
-        tts = gTTS(text=text, lang="en")
+        # Step 1 — Generate temporary MP3
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_mp3:
+            mp3_path = tmp_mp3.name
+            tts = gTTS(text=text, lang="en")
+            tts.save(mp3_path)
 
-        # Create a temp file for Streamlit
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-            temp_path = tmp.name
+        # Step 2 — Convert MP3 → WAV (universal compatibility)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_wav:
+            wav_path = tmp_wav.name
 
-        # Save mp3 output
-        tts.save(temp_path)
+            # Read MP3 → convert to WAV
+            data, samplerate = sf.read(mp3_path, dtype="float32")
+            sf.write(wav_path, data, samplerate)
 
-        return temp_path
+        return wav_path
 
     except Exception as e:
-        print(f"[TTS Error] {e}")
-
-        # Fallback: create a silent mp3 if TTS fails
-        fallback_path = create_silent_audio()
-        return fallback_path
-
-
-
-def create_silent_audio(duration_ms: int = 800):
-    """
-    Generates a silent MP3 file to avoid Streamlit crashing
-    when TTS fails because of API block or offline status.
-    """
-
-    try:
-        import wave
-        import numpy as np
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-            path = tmp.name
-
-        sample_rate = 16000
-        num_samples = int(sample_rate * (duration_ms / 1000))
-
-        silence = np.zeros(num_samples, dtype=np.int16)
-
-        with wave.open(path, "w") as f:
-            f.setnchannels(1)       # mono
-            f.setsampwidth(2)       # 2 bytes
-            f.setframerate(sample_rate)
-            f.writeframes(silence.tobytes())
-
-        return path
-
-    except Exception:
+        print("TTS Error:", e)
         return None
