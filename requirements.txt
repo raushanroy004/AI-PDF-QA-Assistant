@@ -6,7 +6,8 @@ python-dotenv
 transformers
 torch
 huggingface_hub
-soundfile
 groq
-gtts
 pypdf
+pyttsx3
+pydub
+ffmpeg-python

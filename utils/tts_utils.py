@@ -1,35 +1,43 @@
-from gtts import gTTS
+# utils/tts_utils.py
+
+import pyttsx3
+from pydub import AudioSegment
 import tempfile
 import os
-import soundfile as sf
-import numpy as np
+
+# Initialize engine once
+engine = pyttsx3.init()
 
 
 def text_to_speech(text):
     """
-    Convert text into WAV audio (Streamlit-safe).
-    gTTS → MP3 → WAV (always plays correctly)
+    Generate real MP3 audio using offline TTS (pyttsx3 + pydub)
+    Returns path to MP3 file
     """
     if not text or text.strip() == "":
         return None
 
     try:
-        # Step 1 — Generate temporary MP3
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_mp3:
-            mp3_path = tmp_mp3.name
-            tts = gTTS(text=text, lang="en")
-            tts.save(mp3_path)
-
-        # Step 2 — Convert MP3 → WAV (universal compatibility)
+        # Temporary WAV file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_wav:
             wav_path = tmp_wav.name
 
-            # Read MP3 → convert to WAV
-            data, samplerate = sf.read(mp3_path, dtype="float32")
-            sf.write(wav_path, data, samplerate)
+        # Save speech to WAV
+        engine.save_to_file(text, wav_path)
+        engine.runAndWait()
 
-        return wav_path
+        # Convert WAV → MP3
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_mp3:
+            mp3_path = tmp_mp3.name
+
+        sound = AudioSegment.from_wav(wav_path)
+        sound.export(mp3_path, format="mp3")
+
+        # Cleanup
+        os.remove(wav_path)
+
+        return mp3_path
 
     except Exception as e:
-        print("TTS Error:", e)
+        print("TTS ERROR:", e)
         return None
