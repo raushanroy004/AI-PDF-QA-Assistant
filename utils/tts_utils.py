@@ -1,38 +1,47 @@
-import os
-import base64
+from gtts import gTTS
 import tempfile
-from groq import Groq
+import os
+import re
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-client = Groq(api_key=GROQ_API_KEY)
+def clean_for_tts(text):
+    """
+    Removes characters that cause gTTS to create empty audio files.
+    """
+    if not text:
+        return ""
+
+    # remove emojis and non-ASCII chars
+    text = re.sub(r'[^\x00-\x7F]+', ' ', text)
+
+    # remove repeated spaces
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    return text
+
 
 def text_to_speech(text):
     """
-    Convert text to MP3 using Groq TTS (correct base64 decoding)
-    Returns path to saved mp3 file.
+    Convert text to speech using gTTS (100% works on Streamlit Cloud).
+    Returns path to an mp3 file.
     """
 
-    if not text or text.strip() == "":
+    text = clean_for_tts(text)
+
+    if text.strip() == "":
         return None
 
     try:
-        # Request TTS audio
-        response = client.audio.speech.create(
-            model="gpt-4o-mini-tts",
-            voice="alloy",
-            input=text
-        )
+        tts = gTTS(text=text, lang='en')
 
-        # 🔥 Groq returns base64-encoded audio → decode it properly
-        audio_b64 = response.data
-        audio_bytes = base64.b64decode(audio_b64)
-
-        # Save as .mp3 file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-            mp3_path = tmp.name
-            tmp.write(audio_bytes)
+            tmp_path = tmp.name
+            tts.save(tmp_path)
 
-        return mp3_path
+        # Double-check file size (must not be zero)
+        if os.path.getsize(tmp_path) < 2000:
+            return None
+        
+        return tmp_path
 
     except Exception as e:
         print("TTS ERROR:", e)
