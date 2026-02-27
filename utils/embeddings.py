@@ -20,11 +20,19 @@ def create_faiss_index(chunks):
     Create FAISS vector index from text chunks.
     """
 
+    if not chunks:
+        raise ValueError("No text chunks found. PDF might be empty or extraction failed.")
+
     embeddings = [get_embedding(chunk) for chunk in chunks]
 
-    dim = embeddings[0].shape[0]   # = 384
-    index = faiss.IndexFlatL2(dim)
+    if len(embeddings) == 0:
+        raise ValueError("Embeddings list is empty.")
 
-    index.add(np.array(embeddings))
+    embeddings = np.array(embeddings).astype("float32")
+
+    dim = embeddings.shape[1]   # safer than embeddings[0].shape[0]
+
+    index = faiss.IndexFlatL2(dim)
+    index.add(embeddings)
 
     return index
