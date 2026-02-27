@@ -22,7 +22,7 @@ st.set_page_config(
 )
 
 # ------------------------
-# 🌙 ALWAYS APPLY DARK THEME (no toggle)
+# 🌙 DARK THEME
 # ------------------------
 st.markdown(
     """
@@ -54,25 +54,16 @@ st.markdown(
 )
 
 # ------------------------
-# SMALL HELPER: play TTS safely
+# SAFE TTS PLAYER
 # ------------------------
 def play_tts_from_text(text: str):
-    """
-    Calls text_to_speech(text) and plays the result.
-
-    Works for BOTH:
-    - bytes / bytearray
-    - file path (str) -> .wav / .mp3
-    """
     audio_result = text_to_speech(text)
     if not audio_result:
         return
 
-    # Case 1: bytes returned
     if isinstance(audio_result, (bytes, bytearray)):
         st.audio(audio_result)
 
-    # Case 2: file path returned
     elif isinstance(audio_result, str):
         ext = os.path.splitext(audio_result)[1].lower()
         mime = "audio/wav" if ext == ".wav" else "audio/mp3"
@@ -80,7 +71,6 @@ def play_tts_from_text(text: str):
             with open(audio_result, "rb") as f:
                 st.audio(f.read(), format=mime)
         except Exception:
-            # Fallback: try to play the string directly (Streamlit also accepts path)
             st.audio(audio_result, format=mime)
 
 
@@ -101,16 +91,32 @@ uploaded_pdf = st.file_uploader("Upload PDF file", type=["pdf"])
 if uploaded_pdf:
     st.success("PDF uploaded successfully!")
 
+    # -------- TEXT EXTRACTION --------
     with st.spinner("Extracting text..."):
         pdf_text = extract_text_from_pdf(uploaded_pdf)
+
+    # 🚨 SAFETY CHECK 1
+    if not pdf_text or pdf_text.strip() == "":
+        st.error("❌ No text could be extracted from this PDF. It may be scanned or image-based.")
+        st.stop()
 
     cleaned_text = clean_text(pdf_text)
     chunks = chunk_text(cleaned_text)
 
+    # 🚨 SAFETY CHECK 2
+    if not chunks:
+        st.error("❌ Text extracted but no chunks were created.")
+        st.stop()
+
     st.session_state.chunks = chunks
 
-    with st.spinner("Creating embeddings... (1st time may take ~30 sec)"):
-        faiss_index = create_faiss_index(chunks)
+    # -------- CREATE EMBEDDINGS --------
+    with st.spinner("Creating embeddings... (First time may take ~30 sec)"):
+        try:
+            faiss_index = create_faiss_index(chunks)
+        except Exception as e:
+            st.error(f"❌ Error while creating embeddings: {e}")
+            st.stop()
 
     st.session_state.faiss_index = faiss_index
 
@@ -139,7 +145,6 @@ if st.button("Ask 🚀"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        # ✅ Play TTS audio
         play_tts_from_text(short)
 
         with st.expander("📘 View More (Detailed Explanation)"):
@@ -177,7 +182,6 @@ if st.button("Ask (Voice Upload) 🔉"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        # ✅ Play TTS audio
         play_tts_from_text(short)
 
         with st.expander("📘 View More"):
@@ -214,7 +218,6 @@ if st.button("Ask (Live) 🎤🤖"):
         st.subheader("🧠 Answer (Short):")
         st.write(short)
 
-        # ✅ Play TTS audio
         play_tts_from_text(short)
 
         with st.expander("📘 View More"):
